@@ -64,7 +64,10 @@ fn add_insert_for_table(scope: &mut Scope, table_name: &str, columns: &[(String,
         "Result<{}, sqlx::Error>",
         row_struct_name(table_name)
     )));
-    let columns: Vec<_> = columns.iter().filter(|c| c.0 != "id").collect();
+    let columns: Vec<_> = columns
+        .iter()
+        .filter(|c| c.0 != "id" && c.0 != "created_at")
+        .collect();
     let insert_name_list = columns.iter().map(|c| format!("\"{}\"", c.0)).join(", ");
     let args_list = columns.iter().map(|c| format!("row.{}", c.0)).join(", ");
     let insert_placeholders = columns
@@ -152,6 +155,8 @@ fn add_structs_for_table(
         })
         .collect_vec();
     let new_struct = scope.new_struct(&row_struct_name(table_name));
+    new_struct.derive("Debug");
+    new_struct.derive("Clone");
     new_struct.vis("pub");
     for column in &columns {
         new_struct.field(&format!("pub {}", column.0), &column.1);
@@ -159,7 +164,7 @@ fn add_structs_for_table(
     let new_in_struct = scope.new_struct(&input_row_struct_name(table_name));
     new_in_struct.vis("pub");
     for column in columns {
-        if column.0 != "id" {
+        if column.0 != "id" && column.0 != "created_at" {
             new_in_struct.field(&format!("pub {}", column.0), &column.1);
         }
     }
